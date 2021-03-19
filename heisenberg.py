@@ -1,0 +1,100 @@
+import random
+import numpy as np
+from numpy import sin, cos
+from itertools import product
+
+# Dot product of unit vector spins s_1 * s_2
+def dot_Product(angle_set1, angle_set2):
+
+    theta1, phi1 = angle_set1[0], angle_set1[1]
+    theta2, phi2 = angle_set2[0], angle_set2[1]
+    dot_product = sin(theta1)*sin(theta2)*cos(phi1)*cos(phi2)+sin(theta1)*sin(theta2)*sin(phi1)*sin(phi2)+cos(theta1)*cos(theta2)
+
+    return dot_product
+
+#Probably wrong!!!, an estimation for Transfer Matrix for Heisenberg Model
+#exp(i*s_i*s_j) = (Spherical Harmonics)
+def TransferMatrixCreator(J):
+
+    theta_list = np.radians(np.linspace(0,180,7)) #Theta(in degrees) : [0, 30, 60, 90, 120, 150, 180]
+    phi_list = np.radians(np.linspace(0,330,12)) #Phi(in degrees) : [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]
+    angle_set = list(product(theta_list,phi_list))
+
+    hamiltonian = []
+
+    for i in range(len(angle_set)):
+        for j in range(len(angle_set)):
+            hamiltonian.append(J*dot_Product(angle_set[i],angle_set[j]))
+
+    Transfer = []
+    num = 0
+    for i in range(len(angle_set)):
+        row = []
+        for j in range(len(angle_set)):
+            row.append(np.exp(hamiltonian[num]))
+            num = num+1
+        Transfer.append(row)
+
+    return np.array(Transfer)
+
+def TransferMatrixDec(matrix1, matrix2):
+
+    Transfer = np.dot(matrix1,matrix2)
+    return Transfer
+
+def RenormalizationGroup(sample_Size, transfer_matrix_list):
+    
+    np.random.seed(17)
+    transformed_matrix_list = []
+
+    for i in range(sample_Size):
+
+        choice_list = []
+        for j in range(2):
+            choice_list.append(transfer_matrix_list[np.random.randint(1,sample_Size)])
+        Transfer = []
+        Transfer = TransferMatrixDec(choice_list[-2],choice_list[-1])
+        
+        transformed_matrix_list.append(Transfer)
+
+    return transformed_matrix_list
+
+def RG_Flow(sample_Size, RG_step, J_initial):
+
+    sS = sample_Size
+    tm_list = []
+
+    for i in range(sS):
+        tm = TransferMatrixCreator(J_initial)
+        tm_list.append(tm)
+
+    for j in range(RG_step):
+
+        tm_list_transformed = RenormalizationGroup(sS, np.array(tm_list))
+
+#################SHOULD CHECK SMTHNG   
+
+
+#################TO UNDRSTND CALCULATIONS
+        
+        tm_list = tm_list_transformed
+
+        print(tm_list)
+
+    return True
+
+RG_Flow(500,20,1)
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
