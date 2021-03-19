@@ -18,7 +18,7 @@ def TransferMatrixCreator(J):
 
     theta_list = np.radians(np.linspace(0,180,7)) #Theta(in degrees) : [0, 30, 60, 90, 120, 150, 180]
     phi_list = np.radians(np.linspace(0,330,12)) #Phi(in degrees) : [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]
-    angle_set = list(product(theta_list,phi_list))
+    angle_set = list(product(theta_list,phi_list)) #Kartezyen Çarpımı ile 84 elemanlı olabilecek theta, phi kombinasyonları
 
     hamiltonian = []
 
@@ -50,7 +50,7 @@ def RenormalizationGroup(bondNumber, transfer_matrix_list):
     for i in range(bondNumber):
 
         Transfer = []
-        Transfer = TransferMatrixDec(transfer_matrix_list[np.random.randint(1,sample_Size)],transfer_matrix_list[np.random.randint(1,sample_Size)])
+        Transfer = TransferMatrixDec(transfer_matrix_list[np.random.randint(1,bondNumber)],transfer_matrix_list[np.random.randint(1,bondNumber)])
         transformed_matrix_list.append(Transfer)
 
     return transformed_matrix_list
