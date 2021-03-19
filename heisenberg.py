@@ -42,35 +42,31 @@ def TransferMatrixDec(matrix1, matrix2):
     Transfer = np.dot(matrix1,matrix2)
     return Transfer
 
-def RenormalizationGroup(sample_Size, transfer_matrix_list):
+def RenormalizationGroup(bondNumber, transfer_matrix_list):
     
     np.random.seed(17)
     transformed_matrix_list = []
 
-    for i in range(sample_Size):
+    for i in range(bondNumber):
 
-        choice_list = []
-        for j in range(2):
-            choice_list.append(transfer_matrix_list[np.random.randint(1,sample_Size)])
         Transfer = []
-        Transfer = TransferMatrixDec(choice_list[-2],choice_list[-1])
-        
+        Transfer = TransferMatrixDec(transfer_matrix_list[np.random.randint(1,sample_Size)],transfer_matrix_list[np.random.randint(1,sample_Size)])
         transformed_matrix_list.append(Transfer)
 
     return transformed_matrix_list
 
-def RG_Flow(sample_Size, RG_step, J_initial):
+def RG_Flow(bondNumber, RG_step, J_initial):
 
-    sS = sample_Size
+    bN = bondNumber
     tm_list = []
 
-    for i in range(sS):
+    for i in range(bN):
         tm = TransferMatrixCreator(J_initial)
         tm_list.append(tm)
 
     for j in range(RG_step):
 
-        tm_list_transformed = RenormalizationGroup(sS, np.array(tm_list))
+        tm_list_transformed = RenormalizationGroup(bN, np.array(tm_list))
 
 #################SHOULD CHECK SMTHNG   
 
