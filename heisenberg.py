@@ -64,7 +64,9 @@ def RG_Flow(bondNumber, RG_step, J_initial):
         tm = TransferMatrixCreator(J_initial)
         tm_list.append(tm)
 
-    for j in range(RG_step):
+    print(tm_list[0])
+
+    for i in range(RG_step):
 
         tm_list_transformed = RenormalizationGroup(bN, np.array(tm_list))
 
@@ -75,22 +77,9 @@ def RG_Flow(bondNumber, RG_step, J_initial):
         
         tm_list = tm_list_transformed
 
-        print(tm_list)
+        print('RG STEP NO: {}'.format(i))
+        print(tm_list[0])
 
     return True
 
-RG_Flow(500,20,1)
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
+RG_Flow(500,2,1)
