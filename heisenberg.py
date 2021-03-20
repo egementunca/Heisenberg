@@ -3,6 +3,8 @@ import numpy as np
 from numpy import sin, cos
 from itertools import product
 
+import matplotlib.pyplot as plt
+
 # Dot product of unit vector spins s_1 * s_2
 def dot_Product(angle_set1, angle_set2):
 
@@ -12,6 +14,14 @@ def dot_Product(angle_set1, angle_set2):
 
     return dot_product
 
+def max_value_of_Matrix(matrix):
+
+    m = []
+    for i in matrix:
+        for j in i:
+            m.append(j)
+    return max(m)
+            
 #Probably wrong!!!, an estimation for Transfer Matrix for Heisenberg Model
 #exp(i*s_i*s_j) = (Spherical Harmonics)
 def TransferMatrixCreator(J):
@@ -26,12 +36,14 @@ def TransferMatrixCreator(J):
         for j in range(len(angle_set)):
             hamiltonian.append(J*dot_Product(angle_set[i],angle_set[j]))
 
+    hamiltonian_max = np.amax(hamiltonian)
+
     Transfer = []
     num = 0
     for i in range(len(angle_set)):
         row = []
         for j in range(len(angle_set)):
-            row.append(np.exp(hamiltonian[num]))
+            row.append(np.exp(hamiltonian[num]-hamiltonian_max))
             num = num+1
         Transfer.append(row)
 
@@ -39,7 +51,8 @@ def TransferMatrixCreator(J):
 
 def TransferMatrixDec(matrix1, matrix2):
 
-    Transfer = np.dot(matrix1,matrix2)
+    Transfer = np.matmul(matrix1,matrix2)
+    Transfer = Transfer * (1/max_value_of_Matrix(Transfer))
     return Transfer
 
 def RenormalizationGroup(bondNumber, transfer_matrix_list):
@@ -63,9 +76,11 @@ def RG_Flow(bondNumber, RG_step, J_initial):
     for i in range(bN):
         tm = TransferMatrixCreator(J_initial)
         tm_list.append(tm)
-
-    print(tm_list[0])
-
+    
+    print(np.mean(tm_list[0],dtype=np.float128))
+#    plt.hist(tm_list[0])
+#    plt.show()
+    
     for i in range(RG_step):
 
         tm_list_transformed = RenormalizationGroup(bN, np.array(tm_list))
@@ -77,9 +92,10 @@ def RG_Flow(bondNumber, RG_step, J_initial):
         
         tm_list = tm_list_transformed
 
-        print('RG STEP NO: {}'.format(i))
-        print(tm_list[0])
+        print('RG STEP NO : {}'.format(i))
+        print('Mean value of a random Matrix: {}'.format(np.mean(tm_list[0],dtype=np.float128)))
 
-    return True
+#        plt.hist(tm_list[0])
+#        plt.show()
 
-RG_Flow(500,2,1)
+    return tm_list
