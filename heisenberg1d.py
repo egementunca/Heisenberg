@@ -83,8 +83,8 @@ def TransferMatrixDec(matrix1, matrix2):
 def RG_Flow(RG_step, J_initial):
 
     Flow_TM = []
-##    tm = TransferMatrixCreator(J_initial)
-    tm = IsingMatrix(J_initial)
+    tm = TransferMatrixCreator(J_initial)
+    #tm = IsingMatrix(J_initial)
     
     print('Mean value of Matrix: {}'.format(np.mean(tm)))
     Flow_TM.append(tm)
@@ -94,8 +94,12 @@ def RG_Flow(RG_step, J_initial):
         tm_transformed = TransferMatrixDec(tm,tm)
         tm = tm_transformed
         Flow_TM.append(tm)
-        print('RG STEP NO : {}'.format(i))
+        print('RG STEP NO : {}'.format(i+1))
         print('Mean value of Matrix: {}'.format(np.mean(tm)))
-        print('Min value of Matrix: {}'.format(np.amin(tm)))
+        print('Min value of Matrix: {}'.format(np.amin(tm.flatten())))
+        if np.mean(tm) == 1:
+            break
+        else:
+            pass
     
     return Flow_TM
