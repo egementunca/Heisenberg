@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.special import spherical_jn, eval_legendre, spherical_in
 
-plt.style.use('ggplot')
 np.random.seed(17)
 
 rndm_list = []
@@ -11,6 +11,33 @@ for i in range(1024):
 def g(J):
 
     return 4*np.pi*np.sinh(J)*(1/(J))
+
+def V_tilde(J):
+
+	return np.exp(-J) * spherical_in(J)
+
+def coefficient(l,J):
+	return 4*np.pi*(1j**l)*spherical_jn(l,-1j*J)
+
+
+def V_tilde_prime(J, s):
+	x = 0
+	for p in range(-10,11):
+		try:
+			val = V_tilde(J, p)*V_tilde(J, s-p)
+		except:
+			val =0
+		x += val
+	return x**2
+
+def V_prime(J, theta):
+	x = 0
+	for s in range(-10, 11):
+		val = (np.exp(-1j*s*theta))*V_tilde_prime(J, s)
+		x += val
+	return x
+
+print(V_prime(1, 0))
 
 def bond_pool_creator(J, p, size):
 
@@ -41,22 +68,31 @@ def decimation(g_vals):
 		lambda_iterated = g_vals[i]+g_vals[i+1]
 		lambda_vals.append(lambda_iterated)
 
-	return(lambda_vals)
+	return lambda_vals
+
+def bond_moving():
+	
+	pass
 
 def main(J, p, size):
 
-	part_func_iteration = []
 	g_vals_iteration = []
 	f_en_iteration = []
 
 	bond_pool = bond_pool_creator(J, p, size)
 	part_func = part_func_initial(bond_pool)
-	g_vals = np.log(part_func)
+	g_vals = np.log(np.array(part_func))
 	free_energy = np.sum(g_vals)/len(g_vals)
-	part_func_iteration.append(part_func)
 	g_vals_iteration.append(g_vals)
 	f_en_iteration.append(free_energy)
-	return free_energy
+	for i in range(10):
+		g_vals_iterated = decimation(g_vals)
+		free_energy_new = np.sum(g_vals_iterated)/(len(g_vals_iterated))
+		g_vals_iteration.append(g_vals_iterated)
+		f_en_iteration.append(free_energy_new)
+		g_vals = g_vals_iterated
+
+	return g_vals_iteration, f_en_iteration
 
 def cv_data(p):
 
@@ -77,8 +113,9 @@ def cv_data(p):
 	for i in range(len(x)):
 		cv.append((real_x[i]**2)*(y_right[i]+y_left[i]-2*y[i])/(eps**2))
 
-	return real_x, cv
 
+	return real_x, cv
+"""
 labels = []
 p_vals = np.arange(0,11)/10
 cv_list = []
@@ -103,24 +140,7 @@ plt.plot(x_list[0],cv_list[0],
 
 plt.legend(labels)
 plt.show()
-
-'''
-	for i in range(10):
-
-		g_vals_iterated = decimation(g_vals)
-		part_func_iterated = np.exp(g_vals_iterated)
-		free_energy_new = np.sum(g_vals_iterated)/len(g_vals_iterated)
-		part_func_iteration.append(part_func_iterated)
-		g_vals_iteration.append(g_vals_iterated)
-		f_en_iteration.append(free_energy_new)
-		part_func = part_func_iterated
-		g_vals = g_vals_iterated
-
-	return part_func_iteration, g_vals_iteration, f_en_iteration
-'''
-#a,b,c = main(1, 1024)
-#for i in range(11):
-#	print("part_func len: {}, g_vals_len:{}, free_en:{}").format(len(a[i]),len(b[i]),c[i])
+"""
 
 
 	
