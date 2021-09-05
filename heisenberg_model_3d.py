@@ -8,13 +8,13 @@ np.random.seed(17)
 #since gaunt's integral will be used repeatedly we calculate once and for all for our next calculations
 def gaunt_vals(l1,l2):
 	val = 0
-	for l3 in range(abs(l1-l2),l1+l2+1):
+	for l3 in range(abs(l2-l1),l1+l2+1):
 		for m1 in range(-l1,l1+1):
 			for m2 in range(-l2,l2+1):
 				for m3 in range(-l3,l3+1):
 					if (l1+l2+l3)%2 == 0:
 						if m3 == m1+m2:
-							x = gaunt(l1,l2,l3,m1,m2,-m3).n(8)*((-1)**m3)
+							x = gaunt(l1,l2,l3,m1,m2,-m3,prec=8)*((-1)**m3)
 							val += x
 						else:
 							pass
@@ -26,8 +26,8 @@ gaunt_table = np.zeros(121).reshape(11,11)
 for l1 in range(0,11):
 	for l2 in range(0,11):
 		gaunt_table[l1,l2] = gaunt_vals(l1, l2)
-print(gaunt_table)
 
+print(gaunt_table)
 
 #Evaluates the Coefficient Lambda in Plane Wave Expansion Formula (with sum)
 def lambda_eval(J):
@@ -51,7 +51,7 @@ def decimation(Alm_list):
 		for l2 in range(11):
 			decimated_Alm_list[l1,l2] = (Alm_list[l1,l2]**2)
 
-	decimated_Alm_list = decimated_Alm_list / np.max(decimated_Alm_list)
+	decimated_Alm_list = decimated_Alm_list / np.amax(decimated_Alm_list)
 
 	return decimated_Alm_list
 
@@ -107,28 +107,27 @@ def Renorm_Group_Transform(Alm_list):
 	return A_transformed
 
 flow = []
-a = Renorm_Group_Initial(10)
+"""a = Renorm_Group_Initial(.01)
 flow.append(a)
+
 for i in range(5):
 	b = Renorm_Group_Transform(a)
 	flow.append(b)
-	a = b
+	print(b)
+	a = b"""
 
-
-def flow_to_excel(flow):
+def flow_to_excel(flow, file_name):
 
     df_list = []
-    file_name = 'matrice.xlsx'
     writer = pd.ExcelWriter(file_name)
     for i in range(len(flow)):
-        df_list.append(pd.DataFrame(flow[i]))
-        df_list[i].to_excel(writer, sheet_name='RG_NO_{}'.format(i), float_format='%1.5e')
+        df_list.append(pd.DataFrame(flow))
+        df_list[i].to_excel(writer, sheet_name='RG_NO_{}'.format(i+1), float_format='%1.5f')
     writer.save()
 
     return True
 
-flow_to_excel(flow)
-
+flow_to_excel(gaunt_table, 'gaunt_table2.xlsx')
 
 """
 array = np.real(eval_iterated_Alm(10, 10))
