@@ -27,8 +27,6 @@ for l1 in range(0,11):
 	for l2 in range(0,11):
 		gaunt_table[l1,l2] = gaunt_vals(l1, l2)
 
-print(gaunt_table)
-
 #Evaluates the Coefficient Lambda in Plane Wave Expansion Formula (with sum)
 def lambda_eval(J):
 	coef_list = []
@@ -106,28 +104,30 @@ def Renorm_Group_Transform(Alm_list):
 
 	return A_transformed
 
-flow = []
-"""a = Renorm_Group_Initial(.01)
-flow.append(a)
-
-for i in range(5):
-	b = Renorm_Group_Transform(a)
-	flow.append(b)
-	print(b)
-	a = b"""
-
 def flow_to_excel(flow, file_name):
 
     df_list = []
     writer = pd.ExcelWriter(file_name)
     for i in range(len(flow)):
-        df_list.append(pd.DataFrame(flow))
+        df_list.append(pd.DataFrame(flow[i]))
         df_list[i].to_excel(writer, sheet_name='RG_NO_{}'.format(i+1), float_format='%1.5f')
     writer.save()
 
     return True
 
-flow_to_excel(gaunt_table, 'gaunt_table2.xlsx')
+
+flow = []
+a = Renorm_Group_Initial(.01)
+flow.append(a)
+for i in range(5):
+	b = Renorm_Group_Transform(a)
+	flow.append(b)
+	print(b)
+	a = b
+
+
+
+
 
 """
 array = np.real(eval_iterated_Alm(10, 10))
