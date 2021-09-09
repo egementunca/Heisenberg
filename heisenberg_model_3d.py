@@ -1,31 +1,9 @@
 import numpy as np
 from scipy.special import spherical_jn
-from sympy.physics.wigner import gaunt
+from sympy.physics.wigner import gaunt, clebsch_gordan
 import pandas as pd
 
 np.random.seed(17)
-
-#since gaunt's integral will be used repeatedly we calculate once and for all for our next calculations
-def gaunt_vals(l1,l2):
-	val = 0
-	for l3 in range(abs(l2-l1),l1+l2+1):
-		for m1 in range(-l1,l1+1):
-			for m2 in range(-l2,l2+1):
-				for m3 in range(-l3,l3+1):
-					if (l1+l2+l3)%2 == 0:
-						if m3 == m1+m2:
-							x = gaunt(l1,l2,l3,m1,m2,-m3,prec=8)*((-1)**m3)
-							val += x
-						else:
-							pass
-					else:
-						pass
-	return val
-	
-gaunt_table = np.zeros(121).reshape(11,11)
-for l1 in range(0,11):
-	for l2 in range(0,11):
-		gaunt_table[l1,l2] = gaunt_vals(l1, l2)
 
 #Evaluates the Coefficient Lambda in Plane Wave Expansion Formula (with sum)
 def lambda_eval(J):
@@ -33,7 +11,7 @@ def lambda_eval(J):
 	for l in range(11):
 		val = (2*l+1)*(1j**l)*spherical_jn(l,-1j*J)
 		coef_list.append(val)
-	return np.sum(coef_list), coef_list
+	return np.sum(np.real(coef_list)), np.real(coef_list)
 
 #Evaluates the Coefficient Lambda in Plane Wave Expansion Formula  (only formula)
 def lambda_eval_formula(J,l):
@@ -41,68 +19,68 @@ def lambda_eval_formula(J,l):
 	return val
 
 #Takes a list of lambda values and simply squares for same bonds and multiplies for 2 diff bonds
-#Then, divides list to the biggest element of list and normalizes it
-def decimation(Alm_list):
+#Then normalizes it  by dividing list to the biggest element of list
+def decimation(lambda_list):
 
-	decimated_Alm_list = np.zeros(121).reshape(11,11)
-	for l1 in range(11):
-		for l2 in range(11):
-			decimated_Alm_list[l1,l2] = (Alm_list[l1,l2]**2)
-
-	decimated_Alm_list = decimated_Alm_list / np.amax(decimated_Alm_list)
-
-	return decimated_Alm_list
-
-#Evaluates the Coefficient A_lm in Laplace Series for Bond Moving (with sum)
-def eval_Alm(J):
-
-	coef_sum, coef_list = lambda_eval(J)
-	coef_Alm_list = []
+	decimated_lambda_list = np.zeros(11)
 	for l in range(11):
-		val = coef_list[l]*(4*np.pi)*(1/(2*l+1))*np.sqrt((2*l+1)*(1/(4*np.pi)))
-		coef_Alm_list.append(val)
-	return np.sum(coef_Alm_list), coef_Alm_list
+		decimated_lambda_list[l] = ((4*np.pi)/(2*l+1))*(lambda_list[l]**2)
 
-#Evaluates the Coefficient A_lm in Laplace Series for Bond Moving (only formula)
-def eval_Alm_formula(J,l):
-	val = lambda_eval_formula(J, l)*np.sqrt((4*np.pi)*(1/(2*l+1)))
-	return val
+	decimated_lambda_list = decimated_lambda_list/np.amax(decimated_lambda_list)
 
-def eval_iterated_Alm(J1, J2):
-	iterated_Alm = np.zeros(121,dtype=np.cdouble).reshape(11,11)
-	for l1 in range(0,11):
-		for l2 in range(0,11):
-			element = eval_Alm_formula(J1, l1)*eval_Alm_formula(J2, l2)*gaunt_table[l1,l2]
-			iterated_Alm[l1,l2] = element
-	iterated_Alm = np.real(iterated_Alm)
-	return iterated_Alm
+	return decimated_lambda_list
 
-def bond_move(A_lm1, A_lm2):
+def lambda_prime(J1, J2):
+	lambda_prime_list = np.zeros(101,dtype=np.cdouble)
+	for l in range(101):
+		val = 0
+		for l1 in range(101):
+			for l2 in range(101):
+				if abs(l1-l2) <= l and l1+l2 >= l:
+					if (l1+l2+l)%2 == 0:
+						x = lambda_eval_formula(J1, l1)*lambda_eval_formula(J2, l2)*(clebsch_gordan(l1,l2,l,0,0,0)**2)
+						val = val + x
+					else:
+						pass
+				else:
+					pass
+		lambda_prime_list[l] = val
+	lambda_prime_list = np.real(lambda_prime_list)
+	return lambda_prime_list/np.amax(lambda_prime_list)
 
-	iterated_Alm = np.zeros(121,dtype=np.cdouble).reshape(11,11)
-	for l1 in range(0,11):
-		for l2 in range(0,11):
-			element = np.sum(A_lm1)*np.sum(A_lm2)*gaunt_table[l1,l2]
-			iterated_Alm[l1,l2] = element
-	iterated_Alm = np.real(iterated_Alm)
-	return iterated_Alm
+def lambda_bond_move(lambda1, lambda2):
+	lambda_prime_list = np.zeros(101,dtype=np.cdouble)
+	for l in range(101):
+		val = 0
+		for l1 in range(101):
+			for l2 in range(101):
+				if abs(l1-l2) <= l and l1+l2 >= l:
+					if (l1+l2+l)%2 == 0:
+						x = lambda1[l1]*lambda2[l2]*(clebsch_gordan(l1,l2,l,0,0,0)**2)
+						val = val + x
+					else:
+						pass
+				else:
+					pass
+		lambda_prime_list[l] = val
+	lambda_prime_list = np.real(lambda_prime_list)
+	return lambda_prime_list/np.amax(lambda_prime_list)
 
 # 2 Bond Moving and 1 Decimation Process for 3 dimensional Renorm Group
 def Renorm_Group_Initial(J):
 
-	A_prime = eval_iterated_Alm(J, J)
-	A_double_prime = bond_move(A_prime, A_prime)
-	A_transformed = decimation(A_double_prime)
+	lambda_prime_list = lambda_prime(J, J)
+	lambda_double_prime = lambda_bond_move(lambda_prime_list, lambda_prime_list)
+	lambda_transformed = decimation(lambda_double_prime)
 
-	return A_transformed
+	return lambda_transformed
 
-def Renorm_Group_Transform(Alm_list):
+def Renorm_Group_Transform(lambda_list):
 
-	A_prime = bond_move(Alm_list, Alm_list)
-	A_double_prime = bond_move(A_prime, A_prime)
-	A_transformed = decimation(A_double_prime)
-
-	return A_transformed
+	lambda_prime = lambda_bond_move(lambda_list, lambda_list)
+	lambda_double_prime = lambda_bond_move(lambda_prime, lambda_prime)
+	lambda_transformed = decimation(lambda_double_prime)
+	return lambda_transformed
 
 def flow_to_excel(flow, file_name):
 
@@ -117,28 +95,15 @@ def flow_to_excel(flow, file_name):
 
 
 flow = []
-a = Renorm_Group_Initial(.01)
+val, ls = lambda_eval(10)
+flow.append(ls/np.amax(ls))
+a = Renorm_Group_Initial(10)
 flow.append(a)
 for i in range(5):
 	b = Renorm_Group_Transform(a)
 	flow.append(b)
-	print(b)
 	a = b
-
-
-
-
-
-"""
-array = np.real(eval_iterated_Alm(10, 10))
-np.savetxt("foo_low.csv",array,delimiter=',',fmt="%1.5e")
-"""
-
-
-
-
-
-
+flow_to_excel(flow, "matrice2.xlsx")
 
 
 
