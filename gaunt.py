@@ -1,5 +1,24 @@
-from sympy.physics.wigner import gaunt
+from sympy.physics.wigner import gaunt, clebsch_gordan
 import numpy as np
+import pandas as pd
+
+def cleb_coef(l):
+	vals = []
+	for l1 in range(1000):
+		for l2 in range(1000):
+			if l <= l1+l2 and l >= abs(l1-l2):
+				if (l1+l2+l)%2 == 0:
+					x = (clebsch_gordan(l1,l2,l,0,0,0).n(8))**2
+					vals.append(x)
+					print("l = {}, l1 = {}, l2 = {} value is {}".format(l,l1,l2,x))
+				else:
+					pass
+			else:
+				pass
+	return(np.sum(vals))
+
+a = cleb_coef(1)
+print(a)
 
 def gaunt_coef(l1,l2):
 
@@ -25,4 +44,15 @@ def gaunt_coef(l1,l2):
 	print(np.sum(vals))
 	return np.sum(vals)
 
-gaunt_coef(10, 5)
+def flow_to_excel(flow, file_name):
+
+    df_list = []
+    writer = pd.ExcelWriter(file_name)
+#len(flow)
+    for i in range(1):
+        df_list.append(pd.DataFrame(flow))
+        df_list[i].to_excel(writer, sheet_name='RG_NO_{}'.format(i+1), float_format='%1.5f')
+    writer.save()
+
+    return True
+
