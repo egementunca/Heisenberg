@@ -2,6 +2,7 @@ import numpy as np
 from scipy.special import spherical_jn
 from sympy.physics.wigner import gaunt, clebsch_gordan
 import pandas as pd
+from sympy import re
 
 np.random.seed(17)
 
@@ -22,16 +23,16 @@ def lambda_eval_formula(J,l):
 #Then normalizes it  by dividing list to the biggest element of list
 def decimation(lambda_list):
 
-	decimated_lambda_list = np.zeros(11)
-	for l in range(11):
-		decimated_lambda_list[l] = ((4*np.pi)/(2*l+1))*(lambda_list[l]**2)
-
-	decimated_lambda_list = decimated_lambda_list/np.amax(decimated_lambda_list)
+	decimated_lambda_list = []
+	for l in range(len(lambda_list)):
+		val = ((4*np.pi)/(2*l+1))*(lambda_list[l]**2)
+		decimated_lambda_list.append(val)
+	decimated_lambda_list = np.array(decimated_lambda_list)/np.amax(decimated_lambda_list)
 
 	return decimated_lambda_list
 
 def lambda_prime(J1, J2):
-	lambda_prime_list = np.zeros(11,dtype=np.cdouble)
+	lambda_prime_list = []
 	for l in range(11):
 		val = 0
 		for l1 in range(11):
@@ -39,17 +40,17 @@ def lambda_prime(J1, J2):
 				if abs(l1-l2) <= l and l1+l2 >= l:
 					if (l1+l2+l)%2 == 0:
 						x = lambda_eval_formula(J1, l1)*lambda_eval_formula(J2, l2)*(clebsch_gordan(l1,l2,l,0,0,0)**2)
-						val = val + x
+						val = val + re(x)
 					else:
 						pass
 				else:
 					pass
-		lambda_prime_list[l] = val
+		lambda_prime_list.append(val)
 	lambda_prime_list = np.real(lambda_prime_list)
 	return lambda_prime_list/np.amax(lambda_prime_list)
 
 def lambda_bond_move(lambda1, lambda2):
-	lambda_prime_list = np.zeros(11,dtype=np.cdouble)
+	lambda_prime_list = []
 	for l in range(11):
 		val = 0
 		for l1 in range(11):
@@ -62,7 +63,7 @@ def lambda_bond_move(lambda1, lambda2):
 						pass
 				else:
 					pass
-		lambda_prime_list[l] = val
+		lambda_prime_list.append(val)
 	lambda_prime_list = np.real(lambda_prime_list)
 	return lambda_prime_list/np.amax(lambda_prime_list)
 
@@ -83,27 +84,39 @@ def Renorm_Group_Transform(lambda_list):
 
 def flow_to_excel(flow, file_name):
 
-    df_list = []
-    writer = pd.ExcelWriter(file_name)
-    for i in range(len(flow)):
-        df_list.append(pd.DataFrame(flow[i]))
-        df_list[i].to_excel(writer, sheet_name='RG_NO_{}'.format(i), float_format='%1.5f')
-    writer.save()
-
-    return True
-
-
-flow = []
-val, ls = lambda_eval(1)
-flow.append(ls/np.amax(ls))
-a = Renorm_Group_Initial(1)
-flow.append(a)
-for i in range(4):
-	b = Renorm_Group_Transform(a)
-	flow.append(b)
-	a = b
-flow_to_excel(flow, "rgHeisenberg.xlsx")
+	df_list = np.zeros(len(flow)*len(flow[0])).reshape(len(flow[0]),len(flow))
+	writer = pd.ExcelWriter(file_name)
+	for x in range(len(flow)):
+		for y in range(len(flow[x])):
+			df_list[y,x] = flow[x][y]
+	df = pd.DataFrame(df_list)
+	df.to_excel(writer, sheet_name='RG', float_format='%1.4f')
+	writer.save()
+	return True
 
 
+def flow_creator(J, step_no):
 
+	flow = []
+
+	q = []
+	for l in range(11):
+		q.append(np.real(lambda_eval_formula(J, l)))
+	q_max = np.amax(q)
+	q = np.array(q)
+	q = q/q_max
+	flow.append(q)
+
+	a = Renorm_Group_Initial(J)
+	#a = np.ones(11)
+	flow.append(a)
+	for i in range(step_no):
+		b = Renorm_Group_Transform(a)
+		flow.append(b)
+		a = b
+	
+	return flow
+
+flow = flow_creator(10, 4)
+flow_to_excel(flow, "testlow.xlsx")
 
