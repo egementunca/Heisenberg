@@ -1,11 +1,12 @@
 import numpy as np
 from numpy import cos, sin
-from scipy.special import spherical_jn, sph_harm, eval_legendre
-from sympy.physics.wigner import gaunt, clebsch_gordan
+from scipy.special import spherical_jn, sph_harm
+from sympy.physics.wigner import gaunt
 import pandas as pd
 from sympy import re
 
 def renormalize(AlmList):
+	alm = AlmList
 	flat_list = []
 	for i in range(len(AlmList)):
 		for j in range(len(AlmList[i])):
@@ -13,9 +14,8 @@ def renormalize(AlmList):
 	max_val = np.amax(flat_list)
 	for i in range(len(AlmList)):
 		for j in range(len(AlmList[i])):
-			AlmList[i][j] = AlmList[i][j]/max_val
-	return AlmList
-
+			alm[i][j] = AlmList[i][j]/max_val
+	return alm
 
 def lambda_eval(J):
 	coef_list = []
@@ -37,7 +37,6 @@ def createAlm(J,l,m):
 
 #Takes a list of lambda values and simply squares for same bonds and multiplies for 2 diff bonds
 #Then normalizes it  by dividing list to the biggest element of list
-
 def decimation(AlmList):
 
 	decimatedAlmList = []
@@ -82,7 +81,7 @@ def Almprime(J1, J2, l_prec):
 								pass
 			m_list.append(val)
 		AlmprimeList.append(m_list)
-	AlmprimeList = renormalize(AlmprimeList)
+	return AlmprimeList
 
 def AlmBondMove(AlmList1, AlmList2, l_prec):
 	AlmBondMoveList = []
@@ -107,20 +106,23 @@ def AlmBondMove(AlmList1, AlmList2, l_prec):
 								pass
 			m_list.append(val)
 		AlmBondMoveList.append(m_list)
-	AlmBondMoveList = renormalize(AlmBondMoveList)
 	return AlmBondMoveList
-	
+
 def Renorm_Group_Initial(J, l_prec):
 
 	AlmPrimeList = Almprime(J, J, l_prec)
+	AlmPrimeList = renormalize(AlmPrimeList)
 	AlmDoublePrimeList = AlmBondMove(AlmPrimeList, AlmPrimeList, l_prec)
+	AlmDoublePrimeList = renormalize(AlmDoublePrimeList)
 	AlmTransformed = decimation(AlmDoublePrimeList)
 	return AlmTransformed
 
 def Renorm_Group(AlmList1, AlmList2, l_prec):
 
 	AlmPrimeList = AlmBondMove(AlmList1, AlmList2, l_prec)
+	AlmPrimeList = renormalize(AlmPrimeList)
 	AlmDoublePrimeList = AlmBondMove(AlmPrimeList, AlmPrimeList, l_prec)
+	AlmDoublePrimeList = renormalize(AlmDoublePrimeList)
 	AlmTransformed = decimation(AlmDoublePrimeList)
 	return AlmTransformed
 
@@ -129,7 +131,7 @@ def flow_to_excel(flow, file_name):
 	#Names Index
 	row_names = []
 	for l in range(len(flow[0])):
-		for m in range(-l,1):
+		for m in range(0, l+1):
 			name = "A{}{}".format(l,abs(m))
 			row_names.append(name)
 	col_names = []
@@ -139,13 +141,13 @@ def flow_to_excel(flow, file_name):
 	col_names = ["J = 10"] + col_names
 
 	#Lists Alm through y axis and Renorm group through x axis
-	df_list = np.zeros(28*len(flow)).reshape(28,len(flow))
+	df_list = np.zeros(len(flow[0])*len(flow)).reshape(len(flow[0]),len(flow))
 	for x in range(len(flow)):
 		flat = []
 		for l in range(len(flow[x])):
-			for m in range(int((len(flow[x][l])/2)+.5)):
-				flat.append(flow[x][l][-m-1])
-		for y in range(28):
+			for m in range(0, l+1):
+				flat.append(flow[x][l][int((len(flow[x][l])/2)-.5)+m])
+		for y in range(len(flow[0])):
 			df_list[y,x] = flat[y]
 
 	#saving options
@@ -160,27 +162,19 @@ def flow_to_excel(flow, file_name):
 def flowCreator(J, step_no, l_prec):
 
 	#Alm's created through rg steps stored in flow
-	flow = []	
+	flow = []
 
 	#q stores original Alm's
 	q = []
-	for l in range(7):
+	for l in range(l_prec):
 		m_list = []
 		for m in range(-l,l+1):
 			val = np.real(createAlm(J, l, m))
 			m_list.append(val)
-		q.append(m_list)	
+		q.append(m_list)
 	#Renormalizes q
-	flat_q = []
-	for i in range(len(q)):
-		for j in range(len(q[i])):
-			flat_q.append(q[i][j])
-	max_val = np.amax(flat_q)
-	for i in range(len(q)):
-		for j in range(len(q[i])):
-			q[i][j] = q[i][j]/max_val	
-	flow.append(q)	
-	
+	flow.append(renormalize(q))
+
 	#First Renorm Group
 	a = Renorm_Group_Initial(J, l_prec)
 	flow.append(a)
@@ -192,6 +186,7 @@ def flowCreator(J, step_no, l_prec):
 
 	return flow
 
+#Test for BONDMOVING Process
 def threecos(J,theta,phi):
 
 	val = np.exp(J*sin(theta)*cos(phi))
@@ -202,17 +197,13 @@ def expansion(J, theta, phi, l_prec):
 	for l in range(l_prec):
 		for m in range(-l, l+1):
 			x += createAlm(J, l, m)*sph_harm(m,l,phi,theta)
-	return x
+	print(re(x))
+	y = 0
+	bm = Almprime(J,J,l_prec)
+	for i in range(l_prec):
+		for j in range(-i, i+1):
+			y += bm[i][i+j]*sph_harm(j,i,phi,theta)
+	return re(x), re(y)
 
-"""
-thetas  = np.linspace(0,np.pi,20)
-phis = np.linspace(0,2*np.pi,20)
-J = 10
-for theta in thetas:
-	for phi in phis:
-		diff = abs(threecos(J, theta, phi)-expansion(J, theta, phi, ))
-		print(diff)"""
-
-
-flow = flowCreator(10, 10, 25)
+flow = flowCreator(2, 2, 11)
 flow_to_excel(flow, "lowtemp.xlsx")
